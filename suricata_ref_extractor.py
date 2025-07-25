@@ -91,35 +91,6 @@ def process_reference(reference):
     # If not a special type, return original format
     return f"{ref_type}: {ref_value}"
 
-def main():
-    # Default rules file path
-    default_rules_path = "/var/lib/suricata/rules/suricata.rules"
-    
-    if len(sys.argv) < 2:
-        print("Usage: python suricata_ref_extractor.py <SID> [rules_file_path]")
-        print(f"Default rules file path: {default_rules_path}")
-        sys.exit(1)
-    
-    target_sid = sys.argv[1]
-    rules_path = sys.argv[2] if len(sys.argv) > 2 else default_rules_path
-    
-    print(f"Searching for SID: {target_sid}")
-    print(f"Rules file: {rules_path}")
-    print("-" * 50)
-    
-    references = extract_references_by_sid(rules_path, target_sid)
-    
-    if references:
-        print(f"Found reference information for SID {target_sid}:")
-        for i, ref in enumerate(references, 1):
-            print(f"{i}. {ref}")
-    else:
-        print(f"SID {target_sid} not found or no reference information available")
-
-if __name__ == "__main__":
-    main()
-
-# Convenience function for use in other programs
 def get_references_by_sid(sid, rules_file="/var/lib/suricata/rules/suricata.rules"):
     """
     Convenience function: Get reference list by SID
@@ -133,15 +104,12 @@ def get_references_by_sid(sid, rules_file="/var/lib/suricata/rules/suricata.rule
     """
     return extract_references_by_sid(rules_file, str(sid))
 
-# Test function using provided sample data
 def test_with_sample_data():
     """
     Test using the provided sample Suricata rules
     """
-    sample_rules = """
-alert http $EXTERNAL_NET any -> $HTTP_SERVERS any (msg:"ET WEB_SPECIFIC_APPS NetClassifieds Premium Edition SQL Injection Attempt -- ViewCat.php s_user_id INSERT"; flow:established,to_server; http.uri; content:"/ViewCat.php?"; nocase; content:"s_user_id="; nocase; content:"INSERT"; nocase; content:"INTO"; distance:0; nocase; reference:cve,CVE-2007-3354; reference:url,www.securityfocus.com/bid/24584; classtype:web-application-attack; sid:2006549; rev:9; metadata:affected_product Web_Server_Applications, attack_target Web_Server, created_at 2010_07_30, deployment Datacenter, confidence Medium, signature_severity Major, tag SQL_Injection, updated_at 2020_04_17, mitre_tactic_id TA0001, mitre_tactic_name Initial_Access, mitre_technique_id T1190, mitre_technique_name Exploit_Public_Facing_Application;)
-alert http $EXTERNAL_NET any -> $HTTP_SERVERS any (msg:"ET WEB_SPECIFIC_APPS NetVIOS Portal SQL Injection Attempt -- page.asp NewsID SELECT"; flow:established,to_server; http.uri; content:"/News/page.asp?"; nocase; content:"NewsID="; nocase; content:"SELECT"; nocase; content:"FROM"; nocase; distance:0; reference:cve,CVE-2007-1566; reference:url,www.exploit-db.com/exploits/3520/; classtype:web-application-attack; sid:2004158; rev:8; metadata:affected_product Web_Server_Applications, attack_target Web_Server, created_at 2010_07_30, deployment Datacenter, confidence Medium, signature_severity Major, tag SQL_Injection, updated_at 2020_04_17, mitre_tactic_id TA0001, mitre_tactic_name Initial_Access, mitre_technique_id T1190, mitre_technique_name Exploit_Public_Facing_Application;)
-"""
+    sample_rules = """alert http $EXTERNAL_NET any -> $HTTP_SERVERS any (msg:"ET WEB_SPECIFIC_APPS NetClassifieds Premium Edition SQL Injection Attempt -- ViewCat.php s_user_id INSERT"; flow:established,to_server; http.uri; content:"/ViewCat.php?"; nocase; content:"s_user_id="; nocase; content:"INSERT"; nocase; content:"INTO"; distance:0; nocase; reference:cve,CVE-2007-3354; reference:url,www.securityfocus.com/bid/24584; classtype:web-application-attack; sid:2006549; rev:9; metadata:affected_product Web_Server_Applications, attack_target Web_Server, created_at 2010_07_30, deployment Datacenter, confidence Medium, signature_severity Major, tag SQL_Injection, updated_at 2020_04_17, mitre_tactic_id TA0001, mitre_tactic_name Initial_Access, mitre_technique_id T1190, mitre_technique_name Exploit_Public_Facing_Application;)
+alert http $EXTERNAL_NET any -> $HTTP_SERVERS any (msg:"ET WEB_SPECIFIC_APPS NetVIOS Portal SQL Injection Attempt -- page.asp NewsID SELECT"; flow:established,to_server; http.uri; content:"/News/page.asp?"; nocase; content:"NewsID="; nocase; content:"SELECT"; nocase; content:"FROM"; nocase; distance:0; reference:cve,CVE-2007-1566; reference:url,www.exploit-db.com/exploits/3520/; classtype:web-application-attack; sid:2004158; rev:8; metadata:affected_product Web_Server_Applications, attack_target Web_Server, created_at 2010_07_30, deployment Datacenter, confidence Medium, signature_severity Major, tag SQL_Injection, updated_at 2020_04_17, mitre_tactic_id TA0001, mitre_tactic_name Initial_Access, mitre_technique_id T1190, mitre_technique_name Exploit_Public_Facing_Application;)"""
     
     # Write sample data to temporary file for testing
     import tempfile
@@ -170,9 +138,38 @@ alert http $EXTERNAL_NET any -> $HTTP_SERVERS any (msg:"ET WEB_SPECIFIC_APPS Net
         # Clean up temporary file
         os.unlink(temp_file_path)
 
-if __name__ == "__main__":
-    # If no command line arguments, run test
-    if len(sys.argv) == 1:
+def main():
+    """Main function to handle command line execution"""
+    # Default rules file path
+    default_rules_path = "/var/lib/suricata/rules/suricata.rules"
+    
+    if len(sys.argv) < 2:
+        print("Usage: python suricata_ref_extractor.py <SID> [rules_file_path]")
+        print(f"Default rules file path: {default_rules_path}")
+        print("\nTo run test with sample data, use: python suricata_ref_extractor.py test")
+        return
+    
+    # Check if user wants to run test
+    if sys.argv[1].lower() == 'test':
         test_with_sample_data()
+        return
+    
+    target_sid = sys.argv[1]
+    rules_path = sys.argv[2] if len(sys.argv) > 2 else default_rules_path
+    
+    print(f"Searching for SID: {target_sid}")
+    print(f"Rules file: {rules_path}")
+    print("-" * 50)
+    
+    references = extract_references_by_sid(rules_path, target_sid)
+    
+    if references:
+        print(f"Found reference information for SID {target_sid}:")
+        for i, ref in enumerate(references, 1):
+            print(f"{i}. {ref}")
     else:
-        main()
+        print(f"SID {target_sid} not found or no reference information available")
+
+# Only execute main when script is run directly
+if __name__ == "__main__":
+    main()
